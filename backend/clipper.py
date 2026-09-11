@@ -322,6 +322,11 @@ def render_clip(src: str, start: float, end: float, srt_path: str | None,
                 ass_path: str | None = None):
     """Render 1 klip: potong + reframe vertikal (blur-bg ala Vizard) + bakar subtitle."""
     dur = max(1, end-start)
+    # Path absolut: cwd ffmpeg dipindah ke folder subtitle (agar filter subtitles
+    # menerima basename tanpa escaping), jadi src/out relatif akan salah resolve
+    # -> "Error opening input" lalu fallback tanpa subtitle (klip bisu teks).
+    src = os.path.abspath(src)
+    out_path = os.path.abspath(out_path)
     filters: list[str] = []
     if ratio == "9:16":
         # foreground crop tengah + background blur penuh (efek Vizard/Opus)

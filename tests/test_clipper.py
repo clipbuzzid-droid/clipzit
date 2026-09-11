@@ -148,6 +148,33 @@ def test_render_clip_burns_subtitle(tmp_path):
         assert f_sub != f_no, "subtitle tidak terbakar (frame identik dengan no-sub)"
 
 
+def test_render_clip_relative_paths_still_burn_subtitle(tmp_path, monkeypatch):
+    """Bug: cwd ffmpeg dipindah ke folder ass (basename), tapi src/out relatif
+    -> 'Error opening input' -> fallback tanpa subtitle -> klip bisu teks TANPA error.
+    Terjadi saat ass ada di subfolder: dirname(sub_used) != '' sehingga cwd berpindah."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "sub").mkdir()
+    v = tmp_path / "in.mp4"
+    subprocess.run([clipper._FFMPEG, "-y", "-v", "error",
+                    "-f", "lavfi", "-i", "testsrc=size=1280x720:duration=3",
+                    "-c:v", "libx264", str(v)], check=True)
+    # ass di SUBFOLDER -> cwd ffmpeg = sub/ (bukan ''), src relatif jadi salah resolve
+    ass = tmp_path / "sub" / "t.ass"
+    clipper.write_ass([{"start": 0.2, "end": 2.6, "word": "TEST"}], 0.0, str(ass))
+
+    clipper.render_clip("in.mp4", 0.2, 2.6, None, "out.mp4", ass_path="sub/t.ass")
+    clipper.render_clip("in.mp4", 0.2, 2.6, None, "out_nosub.mp4", ass_path=None)
+
+    def frame(mp4, t, name):
+        subprocess.run([clipper._FFMPEG, "-y", "-v", "error", "-ss", str(t),
+                        "-i", mp4, "-frames:v", "1", name], check=True)
+        return Path(name).read_bytes()
+
+    if FFPROBE_OK:
+        assert frame("out.mp4", 0.6, "r_sub.png") != frame("out_nosub.mp4", 0.6, "r_no.png"), \
+            "path relatif + ass subfolder: subtitle tidak terbakar (fallback no-sub diam-diam)"
+
+
 def test_render_fallback_transcode_uses_transcoded_input(tmp_path, monkeypatch):
     """Fallback transcode (input tak didukung decoder) WAJIB pakai file hasil
     transcode sebagai input. Bug lama: slice cmd2 menyisakan `-i <src asli>`,
