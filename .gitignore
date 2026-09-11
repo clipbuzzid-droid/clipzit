@@ -1,0 +1,12 @@
+# kredensial platform — JANGAN pernah di-commit
+storage/creds.json
+
+# artefak build / cache
+__pycache__/
+*.pyc
+.pytest_cache/
+storage/uploads/
+storage/clips/
+storage/jobs.json
+storage/jobs.json.tmp
+tests/_test_store/

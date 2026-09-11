@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clipzit — AI Clipper ala Vizard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===== THEME TOKENS ===== */
+:root,[data-theme="dark"]{
+  --bg:#0B0B14; --ink:#f2f3f7; --mut:#9aa0b4; --dim:#63687e;
+  --glass:rgba(25,25,40,.55); --glass2:rgba(19,19,31,.65);
+  --glass-line:rgba(255,255,255,.12); --shine:rgba(255,255,255,.22);
+  --field:#0e0e18; --lime:#C8FF2E; --lime-ink:#0B0B14; --vio:#7C5CFF;
+  --rose:#FF5C8A; --amber:#FFB020; --ok:#3ddc84;
+  --bg-deco:radial-gradient(1000px 500px at 80% -10%,rgba(124,92,255,.20),transparent),radial-gradient(800px 420px at 10% 0%,rgba(200,255,46,.08),transparent);
+  --shadow:0 20px 60px rgba(0,0,0,.45);
+  --tag-bg:rgba(200,255,46,.10); --tag-bd:rgba(200,255,46,.30);
+}
+[data-theme="light"]{
+  --bg:#eef1f8; --ink:#14161f; --mut:#5b6072; --dim:#9aa0b4;
+  --glass:rgba(255,255,255,.55); --glass2:rgba(255,255,255,.65);
+  --glass-line:rgba(255,255,255,.70); --shine:rgba(255,255,255,.85);
+  --field:rgba(255,255,255,.75); --lime:#4d9e00; --lime-ink:#ffffff; --vio:#6a4dff;
+  --rose:#e1407a; --amber:#c77e00; --ok:#0d9e57;
+  --bg-deco:radial-gradient(900px 480px at 85% -10%,rgba(124,92,255,.25),transparent),radial-gradient(760px 420px at 8% 0%,rgba(77,158,0,.16),transparent),radial-gradient(700px 500px at 50% 110%,rgba(0,180,255,.14),transparent);
+  --shadow:0 20px 55px rgba(70,80,140,.18);
+  --tag-bg:rgba(77,158,0,.10); --tag-bd:rgba(77,158,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg-deco),var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;min-height:100vh;transition:background .35s,color .35s}
+h1,h2,h3,.disp{font-family:"Space Grotesk",Inter,sans-serif}
+/* ===== LIQUID GLASS PRIMITIVE ===== */
+.glass{background:var(--glass);backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);
+  border:1px solid var(--glass-line);box-shadow:var(--shadow),inset 0 1px 0 var(--shine);transition:background .35s,border .35s}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+header{display:flex;align-items:center;gap:12px;padding:20px 0}
+.logo{width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,var(--lime),#7dffc8);display:grid;place-items:center;font-size:22px;font-weight:700;color:#0B0B14;box-shadow:0 4px 22px rgba(120,200,0,.45),inset 0 1px 0 rgba(255,255,255,.6)}
+.brand{font-family:"Space Grotesk";font-weight:700;font-size:22px;letter-spacing:-.5px}
+.brand span{color:var(--lime)}
+.hsub{color:var(--mut);font-size:13px;margin-left:4px}
+.hright{margin-left:auto;display:flex;gap:10px;align-items:center}
+.pill{font-size:12px;color:var(--mut);padding:6px 12px;border-radius:999px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:6px;box-shadow:0 0 8px var(--ok)}
+.tbtn{font-size:16px;padding:7px 12px;border-radius:999px;cursor:pointer;color:var(--ink)}
+.tbtn:hover{filter:brightness(1.1)}
+.hero{text-align:center;padding:34px 0 22px}
+.hero h1{font-size:clamp(30px,5vw,52px);letter-spacing:-1.5px;line-height:1.05}
+.hero h1 em{font-style:normal;color:var(--lime)}
+[data-theme="dark"] .hero h1 em{text-shadow:0 0 40px rgba(200,255,46,.4)}
+.hero p{color:var(--mut);margin-top:10px;font-size:15px}
+.card{border-radius:22px;padding:22px}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{flex:1;text-align:center;padding:11px;border-radius:13px;border:1px solid var(--glass-line);background:rgba(127,140,180,.10);color:var(--mut);font-weight:600;font-size:14px;cursor:pointer;transition:.2s}
+.tab.on{background:linear-gradient(135deg,rgba(200,255,46,.9),rgba(125,255,200,.85));color:#0B0B14;border-color:transparent;box-shadow:0 6px 24px rgba(120,200,0,.35),inset 0 1px 0 rgba(255,255,255,.6)}
+[data-theme="light"] .tab.on{background:linear-gradient(135deg,#57b300,#2fae7d);color:#fff}
+.drop{border:1.5px dashed var(--mut);border-radius:16px;padding:34px 20px;text-align:center;cursor:pointer;transition:.2s;background:rgba(127,140,180,.08)}
+.drop:hover,.drop.over{border-color:var(--lime);background:var(--tag-bg);box-shadow:inset 0 1px 0 var(--shine)}
+.drop .big{font-size:40px}
+.drop b{color:var(--lime)}
+.urlrow{display:flex;gap:10px}
+input[type=text],input[type=url],select{background:var(--field);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-line);color:var(--ink);border-radius:12px;padding:13px 14px;font-size:14px;width:100%;outline:none}
+input:focus,select:focus{border-color:var(--lime);box-shadow:0 0 0 3px var(--tag-bg)}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:14px}
+.opts label{font-size:11px;color:var(--mut);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.6px}
+.go{margin-top:16px;width:100%;padding:15px;border:none;border-radius:15px;background:linear-gradient(135deg,#d4ff4d,#8dff57);color:#0B0B14;font-weight:700;font-size:16px;cursor:pointer;font-family:"Space Grotesk";letter-spacing:-.3px;transition:.2s;box-shadow:0 10px 30px rgba(120,200,0,.35),inset 0 1px 0 rgba(255,255,255,.55)}
+[data-theme="light"] .go{background:linear-gradient(135deg,#3f9e00,#1fa37a);color:#fff}
+.go:hover{transform:translateY(-1px)}
+.go:disabled{opacity:.5;cursor:wait;transform:none}
+.prog{margin-top:14px;display:none}
+.prog.show{display:block}
+.pbar{height:10px;background:rgba(127,140,180,.18);border-radius:99px;overflow:hidden;border:1px solid var(--glass-line)}
+.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--vio),var(--lime));border-radius:99px;transition:width .5s}
+.pmsg{font-size:13px;color:var(--mut);margin-top:8px}
+.sec{display:flex;align-items:center;gap:10px;margin:34px 0 16px}
+.sec h2{font-size:20px;letter-spacing:-.5px}
+.sec .n{background:linear-gradient(135deg,#d4ff4d,#8dff57);color:#0B0B14;font-size:12px;font-weight:700;border-radius:99px;padding:2px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
+[data-theme="light"] .sec .n{background:linear-gradient(135deg,#3f9e00,#1fa37a);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+.clip{border-radius:18px;overflow:hidden;transition:.2s}
+.clip:hover{transform:translateY(-2px)}
+.clip video{width:100%;aspect-ratio:16/9;background:#000;display:block}
+.cbody{padding:14px 15px 16px}
+.crow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.score{width:46px;height:46px;flex:none}
+.ctitle{font-weight:600;font-size:14px}
+.cmeta{font-size:12px;color:var(--mut)}
+.reasons{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0}
+.tag{font-size:11px;background:var(--tag-bg);border:1px solid var(--tag-bd);color:var(--lime);padding:3px 9px;border-radius:99px}
+[data-theme="dark"] .tag{color:var(--lime)}
+[data-theme="light"] .tag{color:#3d7d00;font-weight:600}
+.tx{font-size:12.5px;color:var(--mut);line-height:1.55;background:rgba(127,140,180,.10);border:1px solid var(--glass-line);border-radius:10px;padding:9px 11px;max-height:76px;overflow:auto}
+.cbtns{display:flex;gap:8px;margin-top:11px}
+.btn{flex:1;text-align:center;padding:10px;border-radius:11px;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;border:1px solid var(--glass-line);background:rgba(127,140,180,.12);color:var(--ink)}
+.btn.pri{background:linear-gradient(135deg,#d4ff4d,#8dff57);color:#0B0B14;border-color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
+[data-theme="light"] .btn.pri{background:linear-gradient(135deg,#3f9e00,#1fa37a);color:#fff}
+.btn:hover{filter:brightness(1.08)}
+.jobrow{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:14px;margin-bottom:9px;cursor:pointer;transition:.15s}
+.jobrow:hover{border-color:var(--lime)}
+.jobrow.sel{border-color:var(--lime);box-shadow:0 0 0 3px var(--tag-bg),inset 0 1px 0 var(--shine)}
+.jdot{width:11px;height:11px;border-radius:50%;flex:none}
+.st-done{background:var(--ok);box-shadow:0 0 10px var(--ok)}.st-error{background:var(--rose)}.st-run{background:var(--amber);animation:blink 1s infinite alternate}
+@keyframes blink{to{opacity:.4}}
+.jt{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px}
+.jm{font-size:12px;color:var(--mut)}
+.jdel{margin-left:auto;background:rgba(127,140,180,.10);border:1px solid var(--glass-line);color:var(--mut);border-radius:9px;padding:6px 11px;cursor:pointer;font-size:12px}
+.jdel:hover{color:var(--rose);border-color:var(--rose)}
+.empty{text-align:center;color:var(--dim);padding:36px 10px;font-size:14px}
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:26px}
+.f{border-radius:14px;padding:15px;font-size:13px;color:var(--mut)}
+.f b{color:var(--ink);display:block;font-size:14px;margin-bottom:4px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--glass2);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--lime);color:var(--ink);padding:12px 20px;border-radius:13px;font-size:14px;display:none;z-index:99;box-shadow:var(--shadow)}
+footer{text-align:center;color:var(--dim);font-size:12px;margin-top:50px}
+/* ===== AUTO-UPLOAD ===== */
+.plat{display:flex;gap:14px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--glass-line)}
+.plat:last-of-type{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.plog{width:44px;height:44px;flex:none;border-radius:13px;display:grid;place-items:center;font-size:22px;background:rgba(127,140,180,.12);border:1px solid var(--glass-line)}
+.plat .ph{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+.plat .pm{font-size:12px;color:var(--mut);margin-top:2px}
+.pbtn{flex:none;padding:8px 14px;border-radius:11px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--glass-line);background:rgba(127,140,180,.12);color:var(--ink)}
+.pbtn.ok{background:linear-gradient(135deg,#d4ff4d,#8dff57);color:#0B0B14;border-color:transparent}
+[data-theme="light"] .pbtn.ok{background:linear-gradient(135deg,#3f9e00,#1fa37a);color:#fff}
+.pbtn:hover{filter:brightness(1.08)}
+.panel{display:none;margin:10px 0 4px;padding:14px;border-radius:14px;background:var(--glass2);border:1px solid var(--glass-line)}
+.panel.open{display:block}
+.panel .frow{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:10px}
+.panel label{font-size:11px;color:var(--mut);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.6px}
+.panel input,.panel textarea{width:100%;background:var(--field);border:1px solid var(--glass-line);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:13px;outline:none}
+.panel textarea{min-height:64px;resize:vertical}
+.panel input:focus,.panel textarea:focus{border-color:var(--lime);box-shadow:0 0 0 3px var(--tag-bg)}
+.pacts{display:flex;gap:8px;flex-wrap:wrap}
+.pubrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;padding:10px;border-radius:12px;background:rgba(127,140,180,.08);border:1px solid var(--glass-line)}
+.pubrow .frow{width:100%}
+.pubrow .ptitle{font-weight:600;font-size:13px}
+.pubrow .pstat{font-size:12px;color:var(--mut)}
+.pubrow .perr{font-size:12px;color:var(--rose)}
+.pubrow .purl a{color:var(--lime);text-decoration:none;font-weight:600}
+@media(max-width:640px){.urlrow{flex-direction:column}.jt{max-width:200px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">✂</div>
+    <div class="brand">Clip<span>zit</span></div>
+    <div class="hsub">AI Clipper ala Vizard — bikin Shorts dari video panjang</div>
+    <div class="hright">
+      <span class="pill glass"><span class="dot"></span><span id="health">server…</span></span>
+      <button class="tbtn glass" id="themeBtn" onclick="toggleTheme()" title="Ganti tema">🌙</button>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1>Video panjang → <em>klip viral</em> siap upload</h1>
+    <p>Transkrip AI • Skor viralitas • Auto-crop 9:16 • Subtitle terbakar — 100% lokal, gratis.</p>
+  </div>
+
+  <div class="card glass">
+    <div class="tabs">
+      <button class="tab on" id="tabUp" onclick="tab('up')">📤 Upload video</button>
+      <button class="tab" id="tabYt" onclick="tab('yt')">▶ Link YouTube</button>
+    </div>
+    <div id="paneUp">
+      <div class="drop" id="drop" onclick="document.getElementById('file').click()">
+        <div class="big">🎬</div>
+        <div><b>Klik / seret video ke sini</b> (mp4, mov, mkv, webm)</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px" id="fname">belum ada file dipilih</div>
+      </div>
+      <input type="file" id="file" accept="video/*" style="display:none" onchange="pickFile(this)">
+    </div>
+    <div id="paneYt" style="display:none">
+      <div class="urlrow">
+        <input type="url" id="yturl" placeholder="https://www.youtube.com/watch?v=…">
+        <button class="btn pri" style="flex:none;padding:13px 22px" onclick="submitYt()">⬇ Ambil</button>
+      </div>
+    </div>
+    <div class="opts">
+      <div><label>Jumlah klip</label><select id="oNum"><option>3</option><option selected>5</option><option>8</option><option>10</option></select></div>
+      <div><label>Durasi min (dtk)</label><select id="oMin"><option>15</option><option selected>25</option><option>30</option></select></div>
+      <div><label>Durasi maks (dtk)</label><select id="oMax"><option>30</option><option>45</option><option selected>50</option><option>60</option></select></div>
+      <div><label>Rasio</label><select id="oRatio"><option selected>9:16</option><option>16:9</option></select></div>
+      <div><label>Subtitle</label><select id="oSub"><option value="1" selected>Bakar subtitle</option><option value="0">Tanpa subtitle</option></select></div>
+      <div><label>Bahasa</label><select id="oLang"><option value="auto" selected>Otomatis</option><option value="id">Indonesia</option><option value="en">Inggris</option></select></div>
+    </div>
+    <button class="go" id="goBtn" onclick="submitUpload()">✂ Buat klip viral sekarang</button>
+    <div class="prog" id="prog"><div class="pbar"><i id="pfill"></i></div><div class="pmsg" id="pmsg"></div></div>
+  </div>
+
+  <div class="sec"><h2>⬆ Auto-upload</h2><span class="n" id="credsCount">0</span></div>
+  <div class="card glass" id="pubBox">
+
+  </div>
+  <div class="card glass" id="pubActions" style="margin-top:14px;display:none">
+
+  </div>
+
+  <div class="sec"><h2>Riwayat job</h2><span class="n" id="jobCount">0</span></div>
+  <div id="jobs"></div>
+
+  <div class="sec"><h2 id="clipTitle">Klip</h2><span class="n" id="clipCount">0</span></div>
+  <div class="grid" id="clips"><div class="empty">Pilih job di atas untuk melihat klip. Klip terurut dari skor viral tertinggi. 🚀</div></div>
+
+  <div class="feat">
+    <div class="f glass"><b>🧠 Skor viralitas</b>Hook words, pertanyaan, angka, tempo bicara & hook 3-detik pertama.</div>
+    <div class="f glass"><b>📱 Reframe 9:16</b>Foreground tajam + background blur ala Vizard/Opus, siap Shorts/Reels/TikTok.</div>
+    <div class="f glass"><b>💬 Subtitle terbakar</b>SRT per-kata gaya Shorts langsung di-burn ke video + file .srt terpisah.</div>
+    <div class="f glass"><b>🔒 100% lokal</b>faster-whisper + ffmpeg di mesinmu. Tanpa upload ke cloud, tanpa biaya.</div>
+  </div>
+  <footer>Clipzit • FastAPI + faster-whisper + ffmpeg + yt-dlp • <span id="foot">localhost</span></footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let jobs=[], sel=null, poll=null, filePicked=null;
+const $=id=>document.getElementById(id);
+/* ===== TEMA: dark / light, tersimpan di localStorage ===== */
+function applyTheme(t){document.documentElement.dataset.theme=t;$('themeBtn').textContent=t==='light'?'☀️':'🌙';try{localStorage.setItem('clipzit_theme',t)}catch(e){}}
+function toggleTheme(){applyTheme(document.documentElement.dataset.theme==='light'?'dark':'light')}
+(function(){let t='dark';try{t=localStorage.getItem('clipzit_theme')||'dark'}catch(e){}applyTheme(t)})();
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',3200)}
+function tab(w){$('tabUp').classList.toggle('on',w==='up');$('tabYt').classList.toggle('on',w==='yt');$('paneUp').style.display=w==='up'?'block':'none';$('paneYt').style.display=w==='yt'?'block':'none'}
+function pickFile(i){filePicked=i.files[0];$('fname').textContent=filePicked?('✓ '+filePicked.name+' ('+(filePicked.size/1048576).toFixed(1)+' MB)'):''}
+const drop=$('drop');
+['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',ev=>{const f=ev.dataTransfer.files[0];if(f){filePicked=f;$('fname').textContent='✓ '+f.name}});
+function opts(){return{num:+$('oNum').value,min:+$('oMin').value,max:+$('oMax').value,ratio:$('oRatio').value,sub:$('oSub').value==='1',lang:$('oLang').value}}
+async function submitUpload(){
+  if(!filePicked){toast('Pilih file video dulu ya 📹');return}
+  const o=opts(),fd=new FormData();
+  fd.append('file',filePicked);fd.append('num_clips',o.num);fd.append('min_dur',o.min);
+  fd.append('max_dur',o.max);fd.append('ratio',o.ratio);fd.append('with_subs',o.sub);fd.append('lang',o.lang);
+  $('goBtn').disabled=true;
+  try{const r=await fetch('/api/jobs/upload',{method:'POST',body:fd});const j=await r.json();
+    if(!r.ok)throw new Error(j.detail||'gagal');sel=j.id;startPoll();refresh();toast('Job dibuat — AI mulai bekerja 🤖');
+  }catch(e){toast('Error: '+e.message)}$('goBtn').disabled=false;
+}
+async function submitYt(){
+  const url=$('yturl').value.trim();if(!url){toast('Tempel link YouTube dulu 🔗');return}
+  const o=opts();
+  try{const r=await fetch('/api/jobs/youtube',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({url,num_clips:o.num,min_dur:o.min,max_dur:o.max,ratio:o.ratio,with_subs:o.sub,lang:o.lang})});
+    const j=await r.json();if(!r.ok)throw new Error(j.detail||'gagal');sel=j.id;startPoll();refresh();toast('Mengunduh YouTube… ⬇');
+  }catch(e){toast('Error: '+e.message)}
+}
+function ring(s){const c=s>=90?'#9fe000':s>=82?'#FFB020':'#7C5CFF';
+  return `<svg class="score" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="rgba(127,140,180,.35)" stroke-width="5"/><circle cx="23" cy="23" r="19" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${(s/100*119.4).toFixed(1)} 119.4" transform="rotate(-90 23 23)"/><text x="23" y="28" text-anchor="middle" fill="currentColor" font-size="13" font-weight="700" font-family="Space Grotesk">${s}</text></svg>`}
+function fmt(t){t=Math.round(t);return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')}
+async function refresh(){
+  try{const r=await fetch('/api/jobs');jobs=await r.json()}catch(e){$('health').textContent='offline';return}
+  $('health').textContent='online • '+jobs.length+' job';$('jobCount').textContent=jobs.length;
+  const box=$('jobs');
+  if(!jobs.length){box.innerHTML='<div class="empty">Belum ada job. Upload video pertamamu di atas 👆</div>';return}
+  box.innerHTML=jobs.map(j=>{
+    const st=j.status==='done'?'done':j.status==='error'?'error':'run';
+    const lbl=esc(j.status==='done'?`✓ ${j.clips.length} klip`:j.status==='error'?'✕ gagal':(j.progress||'…'))+` (${j.progress_pct||0}%)`;
+    return `<div class="jobrow glass ${j.id===sel?'sel':''}" onclick="select('${j.id}')">
+      <span class="jdot st-${st}"></span>
+      <div><div class="jt">${esc(j.title||j.id)}</div><div class="jm">${lbl} • ${j.duration?fmt(j.duration):'…'}</div></div>
+      <button class="jdel" onclick="event.stopPropagation();delJob('${j.id}')">hapus</button></div>`}).join('');
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+async function select(id){sel=id;refresh();showClips();startPoll()}
+async function delJob(id){if(!confirm('Hapus job + semua klipnya?'))return;await fetch('/api/jobs/'+id,{method:'DELETE'});if(sel===id)sel=null;$('clips').innerHTML='';refresh()}
+function showClips(){
+  const j=jobs.find(x=>x.id===sel);if(!j)return;
+  $('clipTitle').textContent='Klip — '+(j.title||j.id).slice(0,40);
+  if(j.status!=='done'){$('clipCount').textContent='…';$('clips').innerHTML=`<div class="empty">${esc(j.progress||'memproses…')} (${j.progress_pct||0}%) — tunggu sebentar ⏳</div>`;return}
+  $('clipCount').textContent=j.clips.length;
+  $('clips').innerHTML=j.clips.map(c=>{const cliJson=JSON.stringify(c).replace(/'/g,'&#39;').replace(/"/g,'&quot;');return `<div class="clip glass">
+    <video src="${c.video}" controls preload="metadata" poster="${c.thumb||''}"></video>
+    <div class="cbody"><div class="crow">${ring(c.score)}
+      <div><div class="ctitle">Klip ${c.n} • ${fmt(c.start)} → ${fmt(c.end)} • ${c.dur} dtk</div>
+      <div class="cmeta">skor viral ${c.score}/100</div></div></div>
+      <div class="reasons">${(c.reasons||[]).map(r=>`<span class="tag">${esc(r)}</span>`).join('')}</div>
+      <div class="tx">${esc(c.text||'(tanpa transkrip)')}</div>
+      <div class="cbtns"><a class="btn pri" href="${c.video}" download>⬇ Unduh mp4</a><a class="btn" href="${c.srt}" download>📄 SRT</a><button class="btn" onclick='pubOpen(${cliJson},"${j.id}")'>⬆ Upload</button></div>
+    </div></div>`;}).join('');
+}
+function startPoll(){clearInterval(poll);poll=setInterval(async()=>{
+  await refresh();showClips();
+  const j=jobs.find(x=>x.id===sel);
+  if(j){$('prog').classList.add('show');$('pfill').style.width=(j.progress_pct||0)+'%';$('pmsg').textContent=(j.title||'')+' — '+(j.progress||'');
+    if(j.status==='done'||j.status==='error'){clearInterval(poll);$('pmsg').textContent+=' ✓';toast(j.status==='done'?'Klip jadi! 🎉':'Job gagal 😞')}}
+},2000)}
+refresh();setInterval(refresh,15000);
+
+/* ====================== AUTO-UPLOAD ====================== */
+const PLAT_DEF = [
+  {id:'tiktok',icon:'🎵',name:'TikTok'},
+  {id:'youtube',icon:'▶',name:'YouTube'},
+  {id:'instagram',icon:'📸',name:'Instagram'},
+];
+let credsStatus=null, openPanel=null, pubSel=null;
+
+function escAttr(s){return String(s).replace(/"/g,'&quot;')}
+
+async function loadCreds(){
+  try{const r=await fetch('/api/creds');credsStatus=await r.json()}catch(e){credsStatus=null;return}
+  renderCreds();
+}
+function renderCreds(){
+  const box=$('pubBox');if(!credsStatus){box.innerHTML='<div class="empty">Gagal memuat status kredensial.</div>';return}
+  let conn=0;PLAT_DEF.forEach(p=>{if(credsStatus[p.id]&&credsStatus[p.id].connected)conn++});
+  $('credsCount').textContent=conn;
+  box.innerHTML=PLAT_DEF.map(p=>{
+    const s=credsStatus[p.id]||{connected:false,missing:[]};
+    const fields=s.fields||{};
+    const input = (k,lbl,multi)=>`<div style="grid-column:${multi?'1/-1':'auto'}"><label>${esc(lbl)}</label>${multi
+      ?`<textarea id="cr_${p.id}_${k}" placeholder="...">${s._prevVal&&s._prevId===`cr_${p.id}_${k}`?esc(s._prevVal):''}</textarea>`
+      :`<input type="password" id="cr_${p.id}_${k}" placeholder="••••••••" autocomplete="off">`}</div>`;
+    return `<div class="plat">
+      <div class="plog">${p.icon}</div>
+      <div style="flex:1">
+        <div class="ph">${p.name}
+          ${s.connected?'<span class="tag" style="color:var(--ok)">✓ terhubung</span>':'<span class="tag">belum</span>'}
+        </div>
+        <div class="pm">${s.connected?'Kredensial tersimpan — siap upload.':(s.missing&&s.missing.length?('Butuh: '+s.missing.map(f=>(fields[f]||f)).join(', ')):'Belum disimpan. Klik konfigurasi untuk mengisi token.')}</div>
+        <div class="panel" id="panel_${p.id}">
+          <div class="frow">
+            ${Object.keys(fields).map(k=>input(k,fields[k],k==='description')).join('')}
+          </div>
+          <div class="pacts">
+            <button class="pbtn ok" onclick="saveCred('${p.id}')">💾 Simpan</button>
+            <button class="pbtn" onclick="togglePanel('${p.id}')">Tutup</button>
+            ${s.has_any?`<button class="pbtn" style="color:var(--rose);border-color:var(--rose)" onclick="delCred('${p.id}')">Hapus kredensial</button>`:''}
+          </div>
+        </div>
+        <div style="margin-top:6px;display:flex;gap:6px">
+          <button class="pbtn ok" onclick="togglePanel('${p.id}')">⚙ Konfigurasi</button>
+          ${p.id==='youtube'?`<button class="pbtn" id="ytConnectBtn" onclick="ytConnect()">🔗 Connect YouTube (1-klik)</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function ytConnect(){
+  const cid=prompt('Tempel Client ID dari Google Cloud Console (OAuth Web client):');
+  if(!cid)return;
+  const sec=prompt('Tempel Client Secret:');
+  if(!sec)return;
+  const btn=$('ytConnectBtn');btn.textContent='⏳ Menyiapkan...';btn.disabled=true;
+  try{
+    const r=await fetch('/api/oauth/youtube/start',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({client_id:cid.trim(),client_secret:sec.trim()})});
+    const d=await r.json();
+    if(!d.auth_url)throw new Error(d.detail||'Gagal membuat URL consent');
+    window.open(d.auth_url,'_blank','width=520,height=640');
+    // Google redirect balik ke /api/oauth/youtube/callback di server ini;
+    // polling status sampai access_token tersimpan (maks 3 menit).
+    const t0=Date.now();
+    const poll=setInterval(async()=>{
+      if(Date.now()-t0>180000){clearInterval(poll);btn.textContent='🔗 Connect YouTube (1-klik)';btn.disabled=false;return}
+      try{
+        const s=await (await fetch('/api/oauth/youtube/client')).json();
+        if(s.connected){
+          clearInterval(poll);btn.textContent='✅ YouTube terhubung';btn.disabled=false;
+          loadCreds();alert('YouTube berhasil terhubung ke Clipzit!');
+        }
+      }catch(e){}
+    },3000);
+  }catch(e){btn.textContent='🔗 Connect YouTube (1-klik)';btn.disabled=false;alert(e.message)}
+}
+function togglePanel(id){$('panel_'+id).classList.toggle('open')}
+async function saveCred(p){
+  const s=credsStatus[p.id]||{},fields=s.fields||{};
+  const body={};Object.keys(fields).forEach(k=>{
+    const el=$('cr_'+p.id+'_'+k);if(!el)return;
+    const v=(el.value||'').trim();
+    if(v)body[k]=v   /* field kosong tidak dikirim — jangan menimpa token lama */
+  });
+  if(!Object.keys(body).length){toast('Isi minimal satu field dulu ya ✍');return}
+  const r=await fetch('/api/creds',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platform:p,creds:body})});
+  const j=await r.json();if(!r.ok){toast('Error: '+(j.detail||'gagal'));return}
+  credsStatus=j;toast('Kredensial disimpan 🔐');renderCreds();refresh()
+}
+async function delCred(p){
+  if(!confirm('Hapus kredensial '+p+'?'))return;
+  const r=await fetch('/api/creds/'+p,{method:'DELETE'});const j=await r.json();
+  if(!r.ok){toast('Error: '+(j.detail||'gagal'));return}
+  credsStatus=j;toast('Kredensial dihapus');renderCreds()
+}
+
+/* Publish satu klip: panel meta + tombol per platform */
+function pubOpen(c,jid){
+  pubSel={c:c,jid:jid};
+  loadCreds().then(()=>{
+    const box=$('pubActions');if(!pubSel)return
+    box.style.display='block';
+    box.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div class="ptitle">⬆ Upload Klip #${c.n} ke platform</div>
+      </div>
+      <div class="frow">
+        <div style="grid-column:1/-1"><label>Judul / Caption</label><input id="pubTitle" value="${escAttr(c.text?c.text.slice(0,80):'Klip Clipzit #'+c.n)}" placeholder="Judul caption…"></div>
+        <div style="grid-column:1/-1"><label>Deskripsi (opsional)</label><textarea id="pubDesc" placeholder="Deskripsi / caption lengkap…"></textarea></div>
+        <div><label>Tag (koma)</label><input id="pubTags" placeholder="shorts, tips, viral"></div>
+        <div><label>Privasi (YouTube)</label><select id="pubPriv"><option>private</option><option>unlisted</option><option>public</option></select></div>
+      </div>
+      ${PLAT_DEF.map(p=>{
+        const s=credsStatus?credsStatus[p.id]:{};
+        const st=(c.publish&&c.publish[p.id])||{};
+        const row=st.status==='done'
+          ?`<div class="pstat">✓ Ter-upload ${st.result&&st.result.url?`· <a href="${st.result.url}" target="_blank">lihat</a>`:''}</div>`
+          :st.status==='error'
+          ?`<div class="perr">✕ ${esc(st.error||'gagal')}</div>`
+          :st.status==='uploading'
+          ?`<div class="pstat">⏳ ${esc(st.progress||'upload…')}</div>`
+          :`<button class="pbtn ${s&&s.connected?'ok':''}" ${s&&s.connected?'':'disabled'} onclick="pubGo('${p.id}',${c.n})">${s&&s.connected?'🚀 Upload':'⚠ butuh kredensial'}</button>`;
+        return `<div class="pubrow"><div class="ptitle">${p.icon} ${p.name}</div>${row}</div>`;
+      }).join('')}`;
+  });
+}
+async function pubGo(p,n){
+  if(!pubSel)return;const c=pubSel.c,jid=pubSel.jid;
+  const desc=$('pubDesc')?$('pubDesc').value:'';
+  const tags=$('pubTags')?$('pubTags').value:'';
+  const title=$('pubTitle')?$('pubTitle').value:'';
+  const priv=$('pubPriv')?$('pubPriv').value:'private';
+  const body={jid:jid,n,platform:p,title,description:desc,tags,privacy:priv};
+  const r=await fetch('/api/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json();if(!r.ok){toast('Error: '+(j.detail||'gagal'));return}
+  toast('Upload '+p+' dimulai 🚀');pubOpen(c,jid)   /* kirim ulang jid yang sama, bukan 0 */
+}
+loadCreds();
+</script>
+</body>
+</html>
