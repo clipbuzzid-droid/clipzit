@@ -287,7 +287,7 @@ def write_ass(words: list[dict], t0: float, path: str, hold: float = 0.30):
                 font = "Arial"
     except Exception:
         pass
-    base = (f"{{style}},{font},88,&H00XXXXXX,&H00FFFFFF,&H90000000,&H00000000,"
+    base = (f"{{style}},{font},88,&H00XXXXXX,&H00FFFFFF,&H00000000,&H00000000,"
             "-1,0,0,0,100,100,1.5,0,1,4,1,5,60,60,0,1")
     styles = {
         "WYellow": base.replace("&H00XXXXXX", "&H0000E6FF"),

@@ -1,0 +1,37 @@
+175|            inter = max(0, min(c["end"],p["end"])-max(c["start"],p["start"]))
+176|            span = min(c["end"]-c["start"], p["end"]-p["start"])
+177|            if span>0 and inter/span > 0.4:
+178|                ok = False; break
+179|        if ok:
+180|            picked.append(c)
+181|        if len(picked)>=num_clips:
+182|            break
+183|    picked.sort(key=lambda c:-c["score"])
+184|    # normalisasi skor ke rentang 78–97 agar terasa seperti Vizard
+185|    if picked:
+186|        mn, mx = min(c["score"] for c in picked), max(c["score"] for c in picked)
+187|        for c in picked:
+188|            if mx>mn:
+189|                c["score"] = round(78+19*(c["score"]-mn)/(mx-mn),1)
+190|            else:
+191|                c["score"] = round(min(97,c["score"]+18),1)
+192|    return picked
+193|
+194|
+195|def _fmt_srt_time(t: float) -> str:
+196|    ms = int(round(t*1000))
+197|    h, ms = divmod(ms,3600000); m, ms = divmod(ms,60000); s, ms = divmod(ms,1000)
+198|    return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+199|
+200|
+201|def write_srt(words: list[dict], t0: float, path: str, max_chars: int = 42):
+202|    """Kelompokkan kata jadi baris SRT 1–2 baris gaya Shorts."""
+203|    groups: list[list[dict]] = []
+204|    cur: list[dict] = []
+205|    chars = 0
+206|    for idx, w in enumerate(words):
+207|        txt = w.get("word", "").strip()
+208|        if not txt:
+209|            continue
+210|        cur.append(w); chars += len(txt) + 1
+211|   
