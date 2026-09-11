@@ -27,11 +27,15 @@ pool = ThreadPoolExecutor(max_workers=2)
 # `with _lock` (re-entrant), kalau pakai Lock biasa -> deadlock.
 _lock = threading.RLock()
 _jobs: dict = {}
+_SEQ = 0  # urutan pembuatan job (time.time() terlalu kasar di Windows)
 if JOBS_FILE.exists():
     try:
         _loaded = json.loads(JOBS_FILE.read_text(encoding="utf-8"))
         if isinstance(_loaded, dict):
             _jobs = _loaded
+            # pulihkan seq: tanpa ini job lama (seq tinggi) kalah dari job baru
+            # (seq mulai 1) setelah restart -> daftar tidak newest-first.
+            _SEQ = max((j.get("seq") or 0) for j in _jobs.values()) if _jobs else 0
     except Exception:
         _jobs = {}
 
@@ -61,8 +65,12 @@ class YTRequest(BaseModel):
 def _new_job(source: str, title: str, opts: dict) -> str:
     jid = uuid.uuid4().hex[:10]
     with _lock:
+        # seq: time.time() di Windows hanya ~15ms presisi, jadi dua job cepat
+        # bisa punya created identik -> urutan daftar jadi acak (id acak).
+        global _SEQ
+        _SEQ += 1
         _jobs[jid] = {"id":jid,"title":title,"source":source,"status":"queued",
-                      "created":time.time(),
+                      "created":time.time(),"seq":_SEQ,
                       "progress":"Antre…","progress_pct":5,"clips":[],**opts}
         _save()
     return jid
@@ -185,7 +193,7 @@ def list_jobs():
     with _lock:
         items = copy.deepcopy(list(_jobs.values()))
     # urut terbaru dulu (id acak -> urutan tidak deterministik)
-    return sorted(items, key=lambda j:(j.get("created") or 0, j.get("id","")),
+    return sorted(items, key=lambda j:(j.get("created") or 0, j.get("seq") or 0),
                   reverse=True)[:30]
 
 @app.get("/api/jobs/{jid}")
