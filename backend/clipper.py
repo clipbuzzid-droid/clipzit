@@ -27,6 +27,7 @@ def _find_ffmpeg_tool(tool: str) -> str:
     cands = shutil.which(tool) or ""
     hits = []
     for d in os.environ.get("PATH", "").split(os.pathsep):
+        d = d.strip().strip('"')
         if not d:
             continue
         p = os.path.join(d, tool + (".exe" if os.name == "nt" else ""))
@@ -353,7 +354,7 @@ def render_clip(src: str, start: float, end: float, srt_path: str | None,
            *common, "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart",
            "-shortest", out_path]
     r = subprocess.run(cmd, capture_output=True, text=True,
-                       cwd=os.path.dirname(sub_used) if sub_used else None)
+                       cwd=(os.path.dirname(sub_used) or None) if sub_used else None)
     if r.returncode != 0 or not os.path.exists(out_path):
         # fallback 1: tanpa subtitle bila filter subtitles/font gagal
         cmd2 = [_FFMPEG, "-y", "-ss", str(start), "-i", src, "-t", str(dur),
